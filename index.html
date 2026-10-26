@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="theme-color" content="#05080d"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>STARK OS</title>
+<style>
+:root{--g:#ffc247;--r:#e5321f;--c:#4fe3ff;--bg:#05060a;--tx:#ffe9bd;color-scheme:dark;box-sizing:border-box}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;user-select:none}
+#lock{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,0) 0 calc(24px + env(safe-area-inset-bottom,0));transition:transform 1.2s cubic-bezier(.7,0,.3,1),opacity 1.2s;background:#05060a}
+#lock.up{transform:translateY(-105%);opacity:.2;pointer-events:none}
+#bg{position:absolute;inset:0;width:100%;height:100%}
+#clock{position:relative;width:min(70vw,48vh,420px);aspect-ratio:1;margin-top:8vh}
+#clock svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 8px #ffa72f)}
+#clock .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#time{font-size:clamp(34px,min(9vw,8vh),72px);font-weight:200;letter-spacing:.06em;color:var(--g);text-shadow:0 0 18px #ff9f1a}
+#date{font-size:clamp(11px,1.6vw,16px);letter-spacing:.3em;text-transform:uppercase;opacity:.8;margin-top:4px}
+.bot{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px}
+#fp{width:76px;height:76px;border-radius:50%;border:1px solid var(--g);background:rgba(255,160,40,.08);display:grid;place-items:center;cursor:pointer;animation:pulse 2.2s infinite;color:var(--g)}
+#fp svg{width:44px;height:44px}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,170,50,.5)}100%{box-shadow:0 0 0 26px rgba(255,170,50,0)}}
+.hint{font-size:12px;letter-spacing:.25em;text-transform:uppercase;opacity:.7}
+#auth{position:absolute;inset:0;z-index:3;background:rgba(5,6,10,.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center}
+#auth[hidden]{display:none}
+.card{width:min(92vw,360px);padding:26px;border:1px solid var(--g);border-radius:18px;background:rgba(20,10,5,.7);text-align:center;box-shadow:0 0 40px rgba(255,150,30,.25)}
+.card h2{font-weight:300;letter-spacing:.2em;font-size:15px;color:var(--g);margin-bottom:14px;text-transform:uppercase}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tabs button,.btn{flex:1;padding:9px;background:transparent;border:1px solid #7a5a1f;color:var(--tx);border-radius:8px;cursor:pointer;font-size:13px}
+.tabs button.on,.btn:hover{background:var(--g);color:#1a0d00;border-color:var(--g)}
+#inp{width:100%;padding:12px;font-size:22px;text-align:center;letter-spacing:.3em;background:#0b0b10;border:1px solid var(--g);border-radius:10px;color:var(--g);outline:none;margin-bottom:12px}
+#pat{display:grid;grid-template-columns:repeat(3,64px);gap:22px;justify-content:center;margin:6px 0 14px;touch-action:none}
+#pat i{width:64px;height:64px;border-radius:50%;border:2px solid #7a5a1f;display:block}
+#pat i.on{background:var(--g);box-shadow:0 0 18px var(--g)}
+#msg{min-height:18px;font-size:12px;margin-top:10px;color:var(--c)}
+.shake{animation:sh .4s}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#reactor{position:fixed;inset:0;z-index:6;display:grid;place-items:center;pointer-events:none;opacity:0;transform:scale(.2)}
+#reactor.show{opacity:1;transform:scale(1);transition:transform 1.4s cubic-bezier(.2,.8,.2,1) .5s,opacity .8s .5s}
+#reactor.out{opacity:0;transform:scale(2.6);transition:transform 1s ease-in,opacity 1s}
+.arc{position:relative;width:min(60vw,50vh,380px);aspect-ratio:1}
+.arc b{position:absolute;border-radius:50%;border:2px solid var(--c);box-shadow:0 0 18px var(--c),inset 0 0 18px var(--c)}
+.arc b:nth-child(1){inset:0;border-style:dashed;animation:spin 8s linear infinite}
+.arc b:nth-child(2){inset:12%;border-width:6px;border-color:#2ab5d6 transparent #2ab5d6 transparent;animation:spin 3s linear infinite reverse}
+.arc b:nth-child(3){inset:26%;border-style:dotted;animation:spin 5s linear infinite}
+.arc b:nth-child(4){inset:38%;background:radial-gradient(#fff,var(--c) 45%,transparent 72%);border:0}
+.arc span{position:absolute;inset:auto 0 -14%;text-align:center;letter-spacing:.5em;color:var(--c);font-size:14px;text-shadow:0 0 10px var(--c)}
+@keyframes spin{to{transform:rotate(360deg)}}
+#home{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;padding:calc(14px + env(safe-area-inset-top,0)) 16px calc(14px + env(safe-area-inset-bottom,0));background:radial-gradient(ellipse at 50% 30%,#2b0b08 0%,#0a0408 55%,#05060a 100%);opacity:0;transition:opacity 1s}
+#home.on{opacity:1}
+#home:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(79,227,255,.035) 3px 4px);pointer-events:none}
+.top{width:100%;display:flex;justify-content:space-between;font-size:12px;letter-spacing:.2em;color:var(--c);text-transform:uppercase;z-index:2}
+.top button{background:none;border:1px solid var(--c);color:var(--c);border-radius:6px;padding:4px 10px;cursor:pointer;letter-spacing:.15em}
+#sleep{margin:auto;text-align:center;transition:opacity .6s,transform .6s}
+#home.awake #sleep{opacity:0;transform:scale(.6);pointer-events:none;position:absolute}
+#sleep .mini{width:110px;height:110px;margin:0 auto 22px;position:relative}
+#sleep .mini b{position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);animation:pulse2 2s infinite}
+#sleep .mini b:nth-child(2){animation-delay:1s}
+@keyframes pulse2{to{transform:scale(2);opacity:0}}
+#sleep .mini i{position:absolute;inset:34%;border-radius:50%;background:radial-gradient(#fff,var(--c));box-shadow:0 0 30px var(--c)}
+#sleep h1{font-weight:200;font-size:clamp(20px,3.4vw,38px);letter-spacing:.3em;color:var(--g)}
+#sleep p{margin:8px 0 18px;opacity:.7;font-size:13px;letter-spacing:.15em}
+#sleep .btn{flex:none;padding:10px 26px}
+#apps{display:none;width:100%;max-width:1100px;margin:auto;grid-template-columns:repeat(auto-fill,minmax(clamp(88px,15vw,170px),1fr));gap:clamp(12px,2.4vw,30px);z-index:2}
+#home.awake #apps{display:grid}
+.app{display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;opacity:0;transform:scale(.4) translateY(30px);animation:pop .6s forwards}
+@keyframes pop{to{opacity:1;transform:none}}
+.app .ic{width:clamp(64px,10vw,110px);aspect-ratio:1;display:grid;place-items:center;font-size:clamp(28px,4.6vw,50px);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%);background:linear-gradient(145deg,var(--r),#7a130b 55%,#2a0805);box-shadow:inset 0 0 0 3px var(--g);transition:transform .2s,filter .2s}
+.app:hover .ic{transform:scale(1.12);filter:drop-shadow(0 0 14px var(--g))}
+.app small{font-size:clamp(10px,1.4vw,14px);letter-spacing:.14em;text-transform:uppercase;color:var(--g)}
+#win{position:fixed;inset:0;z-index:4;background:rgba(5,6,10,.94);display:none;flex-direction:column;padding:calc(12px + env(safe-area-inset-top,0)) 14px 14px}
+#win.on{display:flex}
+#win header{display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--g);color:var(--g);letter-spacing:.25em;text-transform:uppercase}
+#win header button{background:var(--r);border:0;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:16px}
+#body{flex:1;overflow:auto;padding:16px 4px;max-width:900px;width:100%;margin:0 auto;user-select:text}
+.row{margin:12px 0}.row label{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:var(--c);margin-bottom:5px}
+.bar{height:10px;border:1px solid var(--c);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--r),var(--g));transition:width .8s}
+.log{height:48vh;overflow:auto;border:1px solid #7a5a1f;border-radius:10px;padding:10px;font-size:14px;line-height:1.5}
+.log p{margin:6px 0}.log .j{color:var(--c)}.log .u{color:var(--g);text-align:right}
+.in2{display:flex;gap:8px;margin-top:10px}.in2 input,textarea{flex:1;background:#0b0b10;border:1px solid var(--g);border-radius:8px;color:var(--tx);padding:11px;font-size:15px;outline:none}
+.in2 .btn{flex:none;padding:0 18px}
+textarea{width:100%;height:50vh;resize:none}
+.list{display:grid;gap:10px}.list div{padding:12px;border:1px solid #7a5a1f;border-left:4px solid var(--r);border-radius:8px;background:rgba(229,50,31,.07)}.list b{color:var(--g)}
+.calc{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:340px;margin:0 auto}.calc .scr{grid-column:1/-1;text-align:right;font-size:30px;color:var(--c);padding:10px;border:1px solid var(--c);border-radius:8px;min-height:56px;overflow:hidden}.calc button{padding:16px;border-radius:10px;border:1px solid var(--g);background:#1a0d08;color:var(--g);font-size:18px;cursor:pointer}
+canvas.rd{display:block;margin:0 auto;max-width:100%;border-radius:50%;box-shadow:0 0 30px rgba(79,227,255,.35)}
+.kp{grid-template-columns:repeat(3,1fr);max-width:300px;margin:8px auto}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px;text-align:center}.cal b{color:var(--c);font-size:12px}.cal i{font-style:normal;padding:10px 0;border:1px solid #3a2a10;border-radius:8px}.cal i.td{background:var(--g);color:#1a0d00}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.ph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--g)}
+.toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:9;background:var(--r);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px}
+.ct{display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid #3a2a10;cursor:pointer}
+.brand{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;z-index:2;color:var(--g);letter-spacing:.5em;font-size:12px;text-shadow:0 0 10px #ff9f1a}
+#home:after{content:"A";position:absolute;inset:0;display:grid;place-items:center;font-size:70vmin;font-weight:900;color:rgba(255,194,71,.045);pointer-events:none}
+[data-theme=command]{--g:#e8faff;--r:#168bff;--c:#00d9ff;--tx:#e8faff}
+[data-theme=shield]{--g:#9fb4c7;--r:#3a4a5c;--c:#00d9ff;--tx:#dbe6f0}
+[data-theme=minimal]{--g:#e8faff;--r:#2a3340;--c:#8fa3b8;--tx:#e8faff}
+[data-theme=holo]{--g:#00d9ff;--r:#0a4a7a;--c:#e8faff;--tx:#cfefff}
+[data-theme]:not([data-theme=iron]) .app .ic{background:linear-gradient(145deg,var(--r),#05080d)!important}
+[data-theme]:not([data-theme=iron]) #home{background:radial-gradient(ellipse at 50% 30%,#0b2038,#05080d 70%)}
+#dash{display:none;width:100%;max-width:700px;z-index:2;margin-top:12px}#home.awake #dash{display:block}
+.app:focus{outline:none}.app:focus .ic{transform:scale(1.15);filter:drop-shadow(0 0 22px var(--c))}
+select{background:#0b0b10;color:var(--tx);border:1px solid var(--g);border-radius:8px;padding:9px;width:100%;margin-top:6px}
+#boot{position:fixed;inset:0;z-index:20;background:#05080d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:34px;transition:opacity .8s}#boot.off{opacity:0;pointer-events:none}#boot .t{min-height:30px;text-align:center;letter-spacing:.3em;color:var(--c);font-size:clamp(12px,2vw,20px);text-shadow:0 0 10px var(--c);padding:0 16px}
+[data-mode=phone] #apps{grid-template-columns:repeat(4,1fr)}
+[data-mode=tablet] #apps{grid-template-columns:repeat(5,1fr)}
+[data-mode=laptop] #apps{grid-template-columns:repeat(6,1fr);max-width:900px}
+[data-mode=tv] #apps{grid-template-columns:repeat(4,1fr);max-width:1500px;gap:4vw}
+[data-mode=tv] .app .ic{width:clamp(110px,12vw,220px);font-size:clamp(50px,6vw,100px)}
+[data-mode=tv] .app small,[data-mode=tv] .top{font-size:clamp(16px,1.8vw,30px)}
+[data-mode=tv] #dash{max-width:1100px}
+[data-mode=laptop] #win{inset:auto;left:15vw;top:9vh;width:70vw;height:80vh;min-width:360px;min-height:260px;border:1px solid var(--g);border-radius:12px;background:rgba(5,8,13,.97);resize:both;overflow:hidden;box-shadow:0 20px 80px #000}
+[data-mode=laptop] #win header{cursor:move}
+</style></head><body>
+
+<div id="boot"><div class="arc" style="width:min(40vw,30vh,240px)"><b></b><b></b><b></b><b></b></div><div class="t" id="bt2"></div><button class="btn" id="skip" style="flex:none;padding:8px 22px">Skip intro</button></div>
+<div id="home">
+ <div class="top"><span>★ AVENGERS OS · STARK INDUSTRIES</span><span id="hc"></span><span><button id="bell">🔔</button> <button id="relock">Lock</button></span></div>
+ <div id="sleep"><div class="mini"><b></b><b></b><i></i></div><h1>Say “Wake up” or “Avengers, assemble”</h1><p id="ls">J.A.R.V.I.S. standing by</p><button class="btn" id="wk">Wake up</button></div>
+ <div id="dash"><div class="in2"><input id="gs" placeholder="Search Google…"><button class="btn" id="gb">Go</button></div><div id="rc" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div></div><div id="apps"></div>
+</div>
+
+<div id="lock">
+ <canvas id="bg"></canvas>
+ <div class="brand">★ AVENGERS INITIATIVE ★</div><div id="clock"><svg viewBox="0 0 200 200" id="sv"></svg><div class="in"><div id="time">00:00</div><div id="date"></div></div></div>
+ <div class="bot"><button id="fp" aria-label="Fingerprint unlock"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 20a14 14 0 0 1 28 0"/><path d="M15 38c-2-5-2-9-2-13a11 11 0 0 1 22 0c0 5 1 9 3 12"/><path d="M20 42c-2-4-3-9-3-15a7 7 0 0 1 14 0c0 4 1 8 2 11"/><path d="M25 43c-1-5-2-9-2-16"/><path d="M30 41c-1-3-2-6-2-10"/></svg></button><div class="hint">Touch to unlock</div></div>
+ <div id="auth" hidden><div class="card" id="card"><h2 id="at">Unlock</h2><div class="tabs" id="tabs"><button data-t="pin">PIN</button><button data-t="pass">Password</button><button data-t="pattern">Pattern</button></div><input id="inp" type="password" autocomplete="off"><div id="pat" hidden></div><div style="display:flex;gap:8px"><button class="btn" id="ok">Confirm</button><button class="btn" id="cx">Cancel</button></div><div id="msg"></div></div></div>
+</div>
+
+<div id="reactor"><div class="arc"><b></b><b></b><b></b><b></b><span>J.A.R.V.I.S.</span></div></div>
+<div id="win"><header><span id="wt"></span><button id="wc">✕</button></header><div id="body"></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let store=null;try{store=JSON.parse(localStorage.getItem('sos'))}catch(e){}
+const save=v=>{store=v;try{localStorage.setItem('sos',JSON.stringify(v))}catch(e){}};
+const say=t=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=.95;u.pitch=.8;speechSynthesis.speak(u)}catch(e){}};
+
+/* ---------- clock ---------- */
+const sv=$('#sv');let h='<circle cx="100" cy="100" r="97" fill="none" stroke="#ffc247" stroke-width="1"/><circle cx="100" cy="100" r="66" fill="none" stroke="#ffc247" stroke-width=".6" stroke-dasharray="2 4"/>';
+for(let i=0;i<60;i++){const a=i*6*Math.PI/180,l=i%5?3:7;h+=`<line x1="${100+Math.sin(a)*90}" y1="${100-Math.cos(a)*90}" x2="${100+Math.sin(a)*(90-l)}" y2="${100-Math.cos(a)*(90-l)}" stroke="#ffc247" stroke-width="${i%5?.6:1.4}"/>`}
+h+='<circle id="sa" cx="100" cy="100" r="78" fill="none" stroke="#ff7a1a" stroke-width="3" stroke-linecap="round" stroke-dasharray="490" stroke-dashoffset="490" transform="rotate(-90 100 100)"/><g id="ring" style="transform-origin:100px 100px"><circle cx="100" cy="100" r="72" fill="none" stroke="#e5321f" stroke-width="1" stroke-dasharray="14 8 3 8"/></g>';
+sv.innerHTML=h;
+function tick(){const d=new Date(),p=n=>String(n).padStart(2,'0');
+ $('#time').textContent=p(d.getHours())+':'+p(d.getMinutes());
+ $('#date').textContent=d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+ $('#sa').style.strokeDashoffset=490-490*((d.getSeconds()*1000+d.getMilliseconds())/60000);
+ $('#ring').style.transform='rotate('+(performance.now()/60)%360+'deg)';
+ $('#hc').textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+ requestAnimationFrame(tick)}tick();
+
+/* ---------- magic spell backdrop ---------- */
+const cv=$('#bg'),cx=cv.getContext('2d');let W,H;
+const runes='ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ✦☉☽⚝⌘'.split('');
+const sp=[...Array(70)].map(()=>({x:Math.random(),y:Math.random(),v:.0006+Math.random()*.0016,s:Math.random()*2+.5}));
+function rs(){const r=devicePixelRatio||1;W=cv.width=innerWidth*r;H=cv.height=innerHeight*r}rs();addEventListener('resize',rs);
+function poly(n,R,rot,sk){cx.beginPath();for(let i=0;i<=n;i++){const a=rot+((i*sk)%n)*2*Math.PI/n;cx[i?'lineTo':'moveTo'](Math.cos(a)*R,Math.sin(a)*R)}cx.stroke()}
+function spell(t){cx.fillStyle='rgba(5,6,10,.35)';cx.fillRect(0,0,W,H);
+ const m=Math.min(W,H),R=m*.46;cx.save();cx.translate(W/2,H*.4);
+ cx.strokeStyle='rgba(255,150,40,.55)';cx.lineWidth=m/500;
+ [1,.86,.62].forEach(k=>{cx.beginPath();cx.arc(0,0,R*k,0,7);cx.stroke()});
+ poly(6,R*.86,t*.0003,2);poly(6,R*.86,-t*.0003+.5,2);poly(5,R*.62,t*.0005,2);poly(8,R*.62,-t*.0004,3);
+ cx.fillStyle='rgba(255,190,80,.9)';cx.font=m/22+'px serif';cx.textAlign='center';cx.textBaseline='middle';
+ [[.93,30,1],[.74,22,-1],[.5,14,1.6]].forEach(([k,n,s])=>{for(let i=0;i<n;i++){const a=i*2*Math.PI/n+t*.0002*s;cx.save();cx.rotate(a);cx.translate(0,-R*k);cx.fillText(runes[(i*7+n)%runes.length],0,0);cx.restore()}});
+ cx.restore();
+ sp.forEach(p=>{p.y-=p.v;if(p.y<0){p.y=1;p.x=Math.random()}cx.fillStyle='rgba(255,'+(140+p.s*30|0)+',40,.8)';cx.fillRect(p.x*W+Math.sin(t*.001+p.x*9)*14,p.y*H,p.s*devicePixelRatio,p.s*devicePixelRatio)});
+ requestAnimationFrame(spell)}requestAnimationFrame(spell);
+
+/* ---------- auth ---------- */
+let type='pin',pat=[],setup=false;
+function view(){document.querySelectorAll('#tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t===type);b.disabled=!setup&&b.dataset.t!==type;b.style.opacity=b.disabled?.35:1});
+ $('#inp').hidden=type==='pattern';$('#pat').hidden=type!=='pattern';$('#inp').value='';
+ $('#inp').inputMode=type==='pin'?'numeric':'text';$('#inp').placeholder=type==='pin'?'• • • •':'password';pat=[];
+ document.querySelectorAll('#pat i').forEach(i=>i.classList.remove('on'));$('#msg').textContent=type==='pattern'?'Draw at least 4 dots':type==='pin'?'Min 4 digits':'Min 4 characters'}
+$('#pat').innerHTML='<i data-i="0"></i><i data-i="1"></i><i data-i="2"></i><i data-i="3"></i><i data-i="4"></i><i data-i="5"></i><i data-i="6"></i><i data-i="7"></i><i data-i="8"></i>';
+$('#fp').onclick=()=>{setup=!store;type=store?store.type:'pin';$('#at').textContent=setup?'Set up your lock':'Authenticate';$('#auth').hidden=false;view();setTimeout(()=>$('#inp').focus(),50)};
+$('#cx').onclick=()=>$('#auth').hidden=true;
+$('#tabs').onclick=e=>{if(e.target.dataset.t&&setup){type=e.target.dataset.t;view()}};
+function bad(t){$('#msg').textContent=t;const c=$('#card');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');pat=[];document.querySelectorAll('#pat i').forEach(i=>i.classList.remove('on'))}
+function submit(){const v=type==='pattern'?pat.join(''):$('#inp').value;
+ if(type==='pattern'?pat.length<4:v.length<4)return bad('Too short');
+ if(type==='pin'&&!/^\d+$/.test(v))return bad('Digits only');
+ if(setup){save({type,val:v});unlock()}else if(v===store.val)unlock();else bad('Access denied')}
+$('#ok').onclick=submit;$('#inp').onkeydown=e=>{if(e.key==='Enter')submit()};
+let down=false;const pg=$('#pat');
+const hit=e=>{const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.dataset.i&&!pat.includes(el.dataset.i)){pat.push(el.dataset.i);el.classList.add('on')}};
+pg.onpointerdown=e=>{down=true;pat=[];pg.querySelectorAll('i').forEach(i=>i.classList.remove('on'));hit(e)};
+pg.onpointermove=e=>{if(down)hit(e)};
+addEventListener('pointerup',()=>{if(down){down=false;if(!pg.hidden&&pat.length>=4&&!setup)submit()}});
+
+/* ---------- unlock sequence ---------- */
+function unlock(){$('#auth').hidden=true;$('#lock').classList.add('up');
+ setTimeout(()=>$('#reactor').classList.add('show'),400);
+ setTimeout(()=>{$('#reactor').classList.add('out');$('#home').classList.add('on');listen()},3000);
+ setTimeout(()=>{$('#lock').style.display='none'},1500)}
+function relock(){stopL();$('#home').classList.remove('on','awake');$('#reactor').className='';$('#win').classList.remove('on');
+ const l=$('#lock');l.style.display='';void l.offsetWidth;l.classList.remove('up')}
+$('#relock').onclick=relock;
+
+/* ---------- wake up ---------- */
+let rec=null,awake=false,on=false;
+function listen(){awake=false;on=true;const S=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!S){$('#ls').textContent='Voice unavailable here — tap Wake up';return}
+ try{rec=new S();rec.continuous=true;rec.interimResults=true;rec.lang='en-US';
+  rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(/wake\s?up|assemble/i.test(e.results[i][0].transcript)){wake();return}};
+  rec.onend=()=>{if(on&&!awake)try{rec.start()}catch(e){}};rec.onerror=()=>{};rec.start();$('#ls').textContent='Listening…'}catch(e){}}
+function stopL(){on=false;try{rec&&rec.stop()}catch(e){}}
+$('#wk').onclick=wake;
+const APPS=[['jarvis','J.A.R.V.I.S.','🤖','linear-gradient(145deg,#4fe3ff,#0b4a63)'],['phone','Phone','📞','linear-gradient(145deg,#2d5bd1,#b3192b 55%,#1b2a6b)'],['camera','Camera','📷','linear-gradient(145deg,#8b5cf6,#2a1250)'],['gallery','Gallery','🖼','linear-gradient(145deg,#c1121f,#111)'],['browser','Browser','🌐','linear-gradient(145deg,#ff8a1f,#7a2d00)'],['music','Music','🎵','linear-gradient(145deg,#ffd23f,#3b4a8f)'],['clock','Clock','⏰','linear-gradient(145deg,#e5321f,#5a0f08)'],['calendar','Calendar','📅','linear-gradient(145deg,#7b3fe4,#15091f)'],['weather','Weather','⛅','linear-gradient(145deg,#5bb8ff,#1a2d6b)'],['calc','Calculator','🧮','linear-gradient(145deg,#e5321f,#b8860b)'],['notes','Notes','📝','linear-gradient(145deg,#4cc23d,#143d12)'],['settings','Settings','⚙','linear-gradient(145deg,#ffc247,#a52a2a)']];
+function wake(){if(awake)return;awake=true;stopL();say('Welcome home, sir. Avengers, assemble.');
+ $('#apps').innerHTML=APPS.map((a,i)=>`<div class="app" tabindex="0" data-a="${a[0]}" style="animation-delay:${.3+i*.09}s"><div class="ic" style="background:${a[3]}">${a[2]}</div><small>${a[1]}</small></div>`).join('');
+ $('#home').classList.add('awake');renderRec();toast('Stark systems online, welcome home');setTimeout(()=>{const f=document.querySelector('.app');f&&f.focus()},900)}
+$('#apps').onclick=e=>{const a=e.target.closest('.app');if(a)openApp(a.dataset.a)};
+
+/* ---------- apps ---------- */
+let timer=null;
+function closeApp(){clearInterval(timer);stopCam();$('#win').classList.remove('on')}$('#wc').onclick=closeApp;
+function openApp(id){const a=APPS.find(x=>x[0]===id),b=$('#body');addRecent(id);beepS();$('#wt').textContent=a[1];$('#win').classList.add('on');clearInterval(timer);
+ const R={
+ calc(){const k='C ± % ÷ 7 8 9 × 4 5 6 − 1 2 3 + 0 . ⌫ ='.split(' ');b.innerHTML='<div class="calc"><div class="scr" id="sc">0</div>'+k.map(x=>`<button>${x}</button>`).join('')+'</div>';let e='';const s=$('#sc');
+  document.querySelector('.calc').onclick=ev=>{const x=ev.target.textContent;if(ev.target.tagName!=='BUTTON')return;
+   if(x==='C')e='';else if(x==='⌫')e=e.slice(0,-1);else if(x==='='){try{e=String(Function('"use strict";return ('+e.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-')+')')())}catch(_){e='Error'}}else if(x!=='±'&&x!=='%')e+=x;s.textContent=e||'0'}},
+ notes(){let v='';try{v=localStorage.getItem('sosn')||''}catch(e){}b.innerHTML='<textarea id="nt" placeholder="Workshop notes…"></textarea>';$('#nt').value=v;$('#nt').oninput=e=>{try{localStorage.setItem('sosn',e.target.value)}catch(_){}}},
+};
+ (R2[id]||R[id])(b)}
+
+const LS=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},SS=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+function toast(t){NOTES.unshift([new Date().toLocaleTimeString().slice(0,5),t]);const bc=$('#bell');if(bc)bc.textContent='🔔'+NOTES.length;const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
+let cam=null;function stopCam(){if(cam){cam.getTracks().forEach(t=>t.stop());cam=null}}
+function beep(){try{const a=new AudioContext(),o=a.createOscillator();o.connect(a.destination);o.frequency.value=880;o.start();setTimeout(()=>{o.stop();a.close()},900)}catch(e){}}
+/* Avengers archive (offline). With an API key in Settings, Jarvis answers anything. */
+const KB=[
+[/tony|iron\s?man|stark\b/,"Tony Stark: genius, billionaire, playboy, philanthropist. Built the Mark I in a cave in Afghanistan, founded the Avengers, accidentally helped create Ultron, and gave his life in Endgame with the Infinity Stones. “I am Iron Man.”"],
+[/captain america|steve|rogers|shield\b/,"Steve Rogers: 1940s super-soldier, frozen in ice for decades. Wields a vibranium shield, lifted Mjolnir in Endgame, then passed the shield to Sam Wilson."],
+[/thor|mjolnir|stormbreaker|asgard/,"Thor Odinson, God of Thunder. Wielded Mjolnir, then Stormbreaker (forged in Nidavellir). Asgard was destroyed in Ragnarok; he later joined the Guardians of the Galaxy."],
+[/hulk|banner/,"Bruce Banner: gamma-radiation physicist. Became “Smart Hulk” in Endgame and used the Stones to bring everyone back, at the cost of his arm."],
+[/widow|natasha|romanoff/,"Natasha Romanoff, ex-Red Room assassin turned Avenger. She sacrificed herself on Vormir to obtain the Soul Stone."],
+[/hawkeye|clint|barton|ronin|kate bishop/,"Clint Barton: master archer. Became Ronin after the Snap, later trained Kate Bishop (Hawkeye, 2021)."],
+[/spider|peter parker/,"Peter Parker: Tony’s protégé. Films: Homecoming, Far From Home, No Way Home, where the world forgot him to fix the multiverse."],
+[/panther|t.?challa|wakanda|shuri|vibranium/,"T’Challa, king of Wakanda, protects the world’s only vibranium source. After his death, Shuri took the mantle in Wakanda Forever."],
+[/strange|time stone|agamotto|sanctum/,"Doctor Stephen Strange, Sorcerer Supreme. He viewed 14,000,605 futures and found only one where Thanos loses."],
+[/captain marvel|carol|danvers/,"Carol Danvers, Captain Marvel: Kree-empowered Air Force pilot with cosmic energy powers. Helped win the Endgame battle."],
+[/ant.?man|scott lang|wasp|hank pym|quantum/,"Scott Lang (Ant-Man), Hope van Dyne (Wasp), Hank Pym. The Quantum Realm made the Time Heist possible."],
+[/wanda|scarlet|vision|mind stone/,"Wanda Maximoff, the Scarlet Witch, has chaos magic. Vision was born from the Mind Stone, with JARVIS as his core. Wanda’s grief shaped WandaVision."],
+[/falcon|sam wilson|bucky|winter soldier/,"Sam Wilson (Falcon) became the new Captain America. Bucky Barnes, the Winter Soldier, is Steve’s best friend, brainwashed by HYDRA."],
+[/loki|tva|sacred timeline/,"Loki, God of Mischief, Thor’s adoptive brother. His variant’s series revolves around the TVA and the Sacred Timeline."],
+[/thanos|snap|blip|gauntlet/,"Thanos, the Mad Titan, collected all six Infinity Stones and halved life across the universe. Five years later Tony’s snap ended him and his army."],
+[/ultron|sokovia/,"Ultron, built by Tony and Bruce from the Mind Stone scepter, tried to wipe out humanity in Sokovia. The Avengers stopped him."],
+[/stones?\b|infinity/,"The six Infinity Stones: Space (Tesseract), Mind (Loki’s scepter), Reality (Aether), Power (Orb), Time (Eye of Agamotto), Soul (Vormir)."],
+[/endgame|time heist|time travel/,"Endgame (2019): Avengers travel through time using Pym particles to collect the Stones from 2012, 2013 and 2014, then undo the Snap. Tony dies saving the universe."],
+[/fury|s\.h\.i\.e\.l\.d|hydra|coulson/,"Nick Fury led S.H.I.E.L.D. and started the Avengers Initiative. HYDRA secretly infiltrated it until its fall in Winter Soldier."],
+[/first avengers|team|members|founding/,"Founding Avengers (2012): Iron Man, Captain America, Thor, Hulk, Black Widow, Hawkeye. Others later joined: Falcon, War Machine, Vision, Scarlet Witch, Spider-Man, Black Panther, Doctor Strange, Captain Marvel, Ant-Man."],
+[/movies?|films?|order|phase|timeline|doomsday/,"MCU Avengers films: Avengers (2012), Age of Ultron (2015), Infinity War (2018), Endgame (2019). Avengers: Doomsday is scheduled for December 2026. Phases: 1 (Iron Man to Avengers), 2, 3 (to Spider-Man: Far From Home), then the Multiverse Saga."],
+[/arc reactor|suit|mark \d|armor/,"The arc reactor powers Tony’s heart and suits. Armor highlights: Mark I (cave), Mark III (red/gold), Mark VII (Avengers), Mark XLII, Mark L (nano), Mark LXXXV (final)."],
+[/jarvis|friday|edith|karen/,"JARVIS was Tony’s AI butler (voiced by Paul Bettany), later the mind of Vision. FRIDAY replaced him, and E.D.I.T.H. came from Tony’s glasses legacy."],
+[/pepper|happy|rhodey|war machine|james/,"Pepper Potts (Tony’s wife and CEO), Happy Hogan (security chief), James “Rhodey” Rhodes (War Machine)."],
+[/guardians|gamora|nebula|star.?lord|rocket|groot/,"Guardians of the Galaxy: Star-Lord, Gamora, Drax, Rocket, Groot, Mantis, Nebula. They fought Thanos alongside the Avengers."],
+[/kang|multiverse|doom\b|variant/,"The Multiverse Saga: Kang the Conqueror and his variants threaten reality, and Doctor Doom is set to play a major role in Doomsday."]];
+const HIST=[];
+async function ask(q){const t=q.toLowerCase();HIST.push({role:'user',content:q});let a=null;
+ if(t.length<30&&/\btime\b/.test(t))a='It is '+new Date().toLocaleTimeString()+', sir.';
+ else if(t.length<30&&/\bdate\b|what day/.test(t))a='Today is '+new Date().toDateString()+', sir.';
+ const k=LS('sosk','');
+ if(!a&&k){try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:700,system:'You are J.A.R.V.I.S., Tony Stark’s AI butler, and an expert on everything about the Avengers and the Marvel universe: characters, comics, films, timelines, tech. Stay in character, address the user as sir, be concise.',messages:HIST.slice(-9)})}),d=await r.json();if(d.content)a=d.content.map(c=>c.text||'').join('')}catch(e){}}
+ if(!a)for(const[r,x]of KB)if(r.test(t)){a=x;break}
+ a=a||'That isn’t in my local archive, sir. Add an API key in Settings and I can answer anything about the Avengers.';HIST.push({role:'assistant',content:a});return a}
+let swE=0,swS=0,tmEnd=0,alarm=LS('sosa',''),lastR='';
+setInterval(()=>{const d=new Date(),hm=d.toTimeString().slice(0,5);
+ if(tmEnd&&Date.now()>=tmEnd){tmEnd=0;beep();toast('Timer done');say('Timer complete, sir')}
+ if(alarm&&hm===alarm&&lastR!==hm){lastR=hm;beep();toast('Alarm '+alarm);say('Your alarm is going off, sir')}},1000);
+const R2={
+jarvis(b){b.innerHTML='<div class="log" id="lg"></div><div class="in2"><input id="q" placeholder="Ask me about the Avengers…"><button class="btn" id="mc">🎤</button><button class="btn" id="s">Send</button></div>';
+ const lg=$('#lg'),add=(c,t)=>{lg.insertAdjacentHTML('beforeend',`<p class="${c}"></p>`);lg.lastChild.textContent=t;lg.scrollTop=1e9;return lg.lastChild};
+ add('j','Good evening, sir. Ask me anything about the Avengers: heroes, villains, films, timelines, tech.');
+ const go=async()=>{const q=$('#q').value.trim();if(!q)return;$('#q').value='';add('u',q);const t=q.toLowerCase();
+  const m=APPS.find(x=>/^(open|launch|start)\b/.test(t)&&(t.includes(x[0])||t.includes(x[1].toLowerCase())));
+  if(m&&m[0]!=='jarvis'){add('j','Opening '+m[1]+', sir.');setTimeout(()=>openApp(m[0]),500);return}
+  if(/^lock/.test(t)){add('j','Locking down, sir.');say('Locking down, sir');setTimeout(()=>{closeApp();relock()},900);return}
+  const el=add('j','…'),r=await ask(q);el.textContent=r;lg.scrollTop=1e9;say(r.slice(0,300))};
+ $('#s').onclick=go;$('#q').onkeydown=e=>{if(e.key==='Enter')go()};
+ $('#mc').onclick=()=>{const S=window.SpeechRecognition||window.webkitSpeechRecognition;if(!S)return toast('Voice input not supported here');const r=new S();r.onresult=e=>{$('#q').value=e.results[0][0].transcript;go()};try{r.start()}catch(e){}}},
+phone(b){let n='';const cs=()=>LS('sosc',[]);
+ const draw=()=>{b.innerHTML='<div style="text-align:center"><div id="pn" style="font-size:34px;min-height:46px;color:var(--c);letter-spacing:.1em"></div></div><div class="calc kp">'+'123456789*0#'.split('').map(x=>`<button>${x}</button>`).join('')+'<button id="bk">⌫</button><button id="cl" style="background:#1d7a34">📞</button><button id="sv2">💾</button></div><p style="font-size:12px;opacity:.7;text-align:center;margin-top:10px">📞 hands the number to your phone’s dialer to place the call</p><div style="margin-top:16px;color:var(--g);letter-spacing:.2em;font-size:12px">CONTACTS</div><div id="ctl"></div>';
+  const pn=$('#pn');pn.textContent=n;
+  $('#ctl').innerHTML=cs().map((c,i)=>`<div class="ct" data-i="${i}"><span>${c[0].replace(/</g,'&lt;')}</span><span>${c[1].replace(/</g,'&lt;')}</span></div>`).join('')||'<p style="opacity:.6;padding:8px">No contacts yet. Dial a number and tap 💾.</p>';
+  document.querySelector('.kp').onclick=e=>{const x=e.target.textContent,id=e.target.id;if(e.target.tagName!=='BUTTON')return;
+   if(id==='bk')n=n.slice(0,-1);else if(id==='cl'){if(n)location.href='tel:'+n}else if(id==='sv2'){if(!n)return;const nm=prompt('Contact name?');if(nm){const l=cs();l.push([nm,n]);SS('sosc',l);}}else n+=x;draw()};
+  $('#ctl').onclick=e=>{const r=e.target.closest('.ct');if(r){n=cs()[r.dataset.i][1];draw()}}};draw()},
+camera(b){b.innerHTML='<video id="cv2" autoplay playsinline muted style="width:100%;max-height:62vh;border:1px solid var(--g);border-radius:12px;background:#000"></video><div style="text-align:center;margin-top:12px"><button class="btn" id="sh" style="max-width:220px">◉ Capture</button></div><p id="cm" style="text-align:center;font-size:12px;margin-top:8px;color:var(--c)"></p>';
+ navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}}).then(s=>{cam=s;$('#cv2').srcObject=s}).catch(()=>$('#cm').textContent='Camera permission denied or unavailable');
+ $('#sh').onclick=()=>{const v=$('#cv2');if(!v.videoWidth)return;const c=document.createElement('canvas');c.width=480;c.height=480*v.videoHeight/v.videoWidth;c.getContext('2d').drawImage(v,0,0,c.width,c.height);SS('sosp',[c.toDataURL('image/jpeg',.6),...LS('sosp',[])].slice(0,20));toast('Photo saved to Gallery')}},
+gallery(b){const d=()=>{const p=LS('sosp',[]);b.innerHTML=p.length?'<div class="ph">'+p.map((x,i)=>`<img src="${x}" data-i="${i}">`).join('')+'</div><p style="font-size:12px;opacity:.6;margin-top:10px">Tap a photo to delete it.</p>':'<p>No photos yet. Take some with Camera.</p>';
+ b.onclick=e=>{if(e.target.dataset.i&&confirm('Delete this photo?')){const p=LS('sosp',[]);p.splice(e.target.dataset.i,1);SS('sosp',p);d()}}};d()},
+browser(b){b.innerHTML='<div class="in2"><input id="u" placeholder="Search or enter address"><button class="btn" id="go">Go</button></div><iframe id="fr" style="width:100%;height:60vh;margin-top:10px;border:1px solid var(--g);border-radius:10px;background:#fff"></iframe><div class="in2 qk" style="margin-top:10px;flex-wrap:wrap"><button class="btn" data-u="en.wikipedia.org/wiki/Avengers_(Marvel_Comics)">Avengers Wiki</button><button class="btn" data-u="en.wikipedia.org/wiki/Marvel_Cinematic_Universe">MCU</button><button class="btn" data-u="marvel.com">Marvel</button></div><p style="font-size:12px;opacity:.8;margin-top:8px">Sites like Google and YouTube refuse to load inside a frame. For those use <a id="ot" target="_blank" rel="noopener" style="color:var(--c)">Open in new tab ↗</a></p>';
+ const go=()=>{let v=$('#u').value.trim();if(!v)return;let o;if(/^[^\s]+\.[^\s]{2,}$/.test(v)){v=o=/^https?:/.test(v)?v:'https://'+v}else{o='https://duckduckgo.com/?q='+encodeURIComponent(v);v='https://en.wikipedia.org/w/index.php?search='+encodeURIComponent(v)}$('#fr').src=v;$('#ot').href=o};
+ $('#go').onclick=go;$('#u').onkeydown=e=>{if(e.key==='Enter')go()};document.querySelector('.qk').onclick=e=>{const u=e.target.dataset.u;if(u){$('#u').value=u;go()}}},
+music(b){b.innerHTML='<input id="mf" type="file" accept="audio/*" multiple style="color:var(--tx)"><audio id="au" controls style="width:100%;margin:14px 0"></audio><div id="tl"></div>';
+ $('#mf').onchange=e=>{const f=[...e.target.files];$('#tl').innerHTML=f.map((x,i)=>`<div class="ct" data-i="${i}">🎵 ${x.name.replace(/</g,'&lt;')}</div>`).join('');
+  const play=i=>{$('#au').src=URL.createObjectURL(f[i]);$('#au').play()};$('#tl').onclick=ev=>{const r=ev.target.closest('.ct');if(r)play(r.dataset.i)};if(f.length)play(0)}},
+clock(b){b.innerHTML='<div class="row"><label><span>STOPWATCH</span></label><div id="sw" style="font-size:40px;color:var(--c)">0:00.0</div><div class="in2"><button class="btn" id="s1">Start / Stop</button><button class="btn" id="s2">Reset</button></div></div><div class="row"><label><span>TIMER (MINUTES)</span></label><div class="in2"><input id="tm" type="number" value="1" min="0.1" step="0.5"><button class="btn" id="t1">Start</button></div><div id="td" style="margin-top:6px;color:var(--c)"></div></div><div class="row"><label><span>ALARM</span></label><div class="in2"><input id="al" type="time"><button class="btn" id="a1">Set</button><button class="btn" id="a2">Clear</button></div><div id="ad" style="margin-top:6px;color:var(--c)"></div></div>';
+ const f=ms=>{const s=ms/1000;return Math.floor(s/60)+':'+(s%60).toFixed(1).padStart(4,'0')};
+ const u=()=>{$('#sw').textContent=f(swE+(swS?Date.now()-swS:0));$('#td').textContent=tmEnd?'Remaining '+f(Math.max(0,tmEnd-Date.now())):'';$('#ad').textContent=alarm?'Alarm set for '+alarm:'No alarm'};
+ $('#s1').onclick=()=>{if(swS){swE+=Date.now()-swS;swS=0}else swS=Date.now()};$('#s2').onclick=()=>{swE=0;swS=0};
+ $('#t1').onclick=()=>{tmEnd=Date.now()+parseFloat($('#tm').value||1)*60000};
+ $('#a1').onclick=()=>{alarm=$('#al').value;SS('sosa',alarm)};$('#a2').onclick=()=>{alarm='';SS('sosa','')};
+ u();timer=setInterval(u,100)},
+calendar(b){const d=new Date();d.setDate(1);const dr=()=>{const y=d.getFullYear(),m=d.getMonth(),f=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),t=new Date();let c='';for(let i=0;i<f;i++)c+='<i style="border:0"></i>';for(let i=1;i<=n;i++)c+=`<i class="${i==t.getDate()&&m==t.getMonth()&&y==t.getFullYear()?'td':''}">${i}</i>`;
+ b.innerHTML=`<div class="in2"><button class="btn" id="pv" style="flex:1">‹</button><div style="flex:3;text-align:center;color:var(--g);letter-spacing:.2em;align-self:center">${d.toLocaleDateString(undefined,{month:'long',year:'numeric'}).toUpperCase()}</div><button class="btn" id="nx" style="flex:1">›</button></div><div class="cal">${'SMTWTFS'.split('').map(x=>'<b>'+x+'</b>').join('')}${c}</div>`;
+ $('#pv').onclick=()=>{d.setMonth(m-1);dr()};$('#nx').onclick=()=>{d.setMonth(m+1);dr()}};dr()},
+weather(b){b.innerHTML='<p id="wx" style="text-align:center">Locating…</p>';
+ if(!navigator.geolocation){$('#wx').textContent='Location unavailable';return}
+ navigator.geolocation.getCurrentPosition(async p=>{try{const r=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.coords.latitude}&longitude=${p.coords.longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m`)).json(),c=r.current;
+  $('#wx').innerHTML=`<div style="font-size:76px;color:var(--g)">${Math.round(c.temperature_2m)}°C</div><div style="color:var(--c);letter-spacing:.15em">HUMIDITY ${c.relative_humidity_2m}% · WIND ${c.wind_speed_10m} km/h</div>`}catch(e){$('#wx').textContent='Weather feed unreachable (needs internet).'}},()=>$('#wx').textContent='Location permission needed.')},
+settings(b){b.innerHTML='<div class="list"><div><b>Lock</b> ('+(store?store.type.toUpperCase():'none')+')<br><button class="btn" id="rl" style="width:100%;margin-top:8px">Reset lock (new PIN / password / pattern)</button></div><div><b>Jarvis AI key</b> (Anthropic, stored only on this device)<div class="in2"><input id="ky" type="password" placeholder="sk-ant-…"><button class="btn" id="ks">Save</button></div></div><div><b>Theme</b><select id="th"><option value="iron">Iron Man / JARVIS</option><option value="command">Avengers Command Center</option><option value="shield">SHIELD Tactical</option><option value="minimal">Stark Minimal</option><option value="holo">Dark Holographic</option></select></div><div><b>Layout</b><select id="md"><option value="auto">Auto-detect</option><option value="phone">Phone</option><option value="tablet">Tablet</option><option value="laptop">Laptop / Desktop</option><option value="tv">TV (remote keys)</option></select></div><div><label><input type="checkbox" id="mu"> Mute sounds</label></div><div><b>Battery</b>: <span id="bt">n/a</span></div><div><button class="btn" id="fs" style="width:100%">Toggle fullscreen</button></div><div><button class="btn" id="lk" style="width:100%">Lock now</button></div></div>';
+ $('#ky').value=LS('sosk','');initPrefs();$('#ks').onclick=()=>{SS('sosk',$('#ky').value.trim());toast('Key saved')};
+ if(navigator.getBattery)navigator.getBattery().then(x=>$('#bt').textContent=Math.round(x.level*100)+'%'+(x.charging?' ⚡':''));
+ $('#rl').onclick=()=>{store=null;try{localStorage.removeItem('sos')}catch(e){}closeApp();relock()};
+ $('#fs').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
+ $('#lk').onclick=()=>{closeApp();relock()}}};
+
+const NOTES=[],P=Object.assign({theme:'iron',mode:'auto',mute:false},LS('sosprefs',{}));
+APPS.push(['alerts','Alerts','🔔','linear-gradient(145deg,#ff334f,#4a0a14)'],['media','Media','📺','linear-gradient(145deg,#168bff,#08203d)']);
+const autoMode=()=>/smart-?tv|tizen|web0s|aftm|crkey|bravia|hbbtv/i.test(navigator.userAgent)?'tv':innerWidth<700?'phone':innerWidth<1100?'tablet':'laptop';
+function applyPrefs(){const h=document.documentElement;h.dataset.theme=P.theme;h.dataset.mode=P.mode==='auto'?autoMode():P.mode}
+applyPrefs();addEventListener('resize',applyPrefs);
+function initPrefs(){const th=$('#th'),md=$('#md'),mu=$('#mu');th.value=P.theme;md.value=P.mode;mu.checked=P.mute;th.onchange=()=>{P.theme=th.value;SS('sosprefs',P);applyPrefs()};md.onchange=()=>{P.mode=md.value;SS('sosprefs',P);applyPrefs()};mu.onchange=()=>{P.mute=mu.checked;SS('sosprefs',P)}}
+let AC;function beepS(){if(P.mute)return;try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=660;g.gain.value=.05;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+.07)}catch(e){}}
+function addRecent(id){SS('sosr',[id,...LS('sosr',[]).filter(x=>x!==id)].slice(0,4));renderRec()}
+function renderRec(){const r=$('#rc');if(!r)return;r.innerHTML='';LS('sosr',[]).forEach(id=>{const a=APPS.find(x=>x[0]===id);if(!a)return;const b=document.createElement('button');b.className='btn';b.style.flex='none';b.textContent=a[2]+' '+a[1];b.onclick=()=>openApp(id);r.appendChild(b)})}
+const gsr=()=>{const v=$('#gs').value.trim();if(v){window.open('https://www.google.com/search?q='+encodeURIComponent(v),'_blank','noopener');$('#gs').value=''}};
+$('#gb').onclick=gsr;$('#gs').onkeydown=e=>{if(e.key==='Enter')gsr()};$('#bell').onclick=()=>openApp('alerts');
+R2.alerts=b=>{b.innerHTML=NOTES.length?'<div class="list">'+NOTES.map(n=>`<div><b>${n[0]}</b> ${String(n[1]).replace(/</g,'&lt;')}</div>`).join('')+'</div><button class="btn" id="nc" style="width:100%;margin-top:12px">Clear all</button>':'<p>No notifications.</p>';const c=$('#nc');if(c)c.onclick=()=>{NOTES.length=0;$('#bell').textContent='🔔';R2.alerts(b)}};
+R2.media=b=>{b.innerHTML='<div class="list">'+[['▶ YouTube','https://www.youtube.com'],['🎬 Netflix','https://www.netflix.com'],['📦 Prime Video','https://www.primevideo.com'],['⭐ Hotstar','https://www.hotstar.com'],['🎧 Spotify','https://open.spotify.com']].map(x=>`<a class="ct" target="_blank" rel="noopener" href="${x[1]}" style="color:var(--tx);text-decoration:none;font-size:20px;padding:18px">${x[0]}</a>`).join('')+'</div>'};
+addEventListener('keydown',e=>{const k=e.key,on=$('#win').classList.contains('on'),aw=$('#home').classList.contains('awake'),tg=document.activeElement.tagName;
+ if(k==='Escape'||(k==='Backspace'&&!/INPUT|TEXTAREA|SELECT/.test(tg))){if(on)closeApp();return}
+ if(e.altKey&&k.toLowerCase()==='l'){closeApp();relock();return}
+ if(e.altKey&&/^[1-9]$/.test(k)&&APPS[k-1]&&aw){openApp(APPS[k-1][0]);return}
+ if(on||!aw||/INPUT|TEXTAREA|SELECT/.test(tg))return;
+ const ap=[...document.querySelectorAll('.app')],cur=document.activeElement.closest('.app')||ap[0];if(!cur)return;
+ if(k==='Enter'&&document.activeElement.classList.contains('app')){openApp(cur.dataset.a);return}
+ const D={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k];if(!D)return;e.preventDefault();
+ const r=cur.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let best=null,bd=1e9;
+ ap.forEach(a=>{if(a===cur)return;const q=a.getBoundingClientRect(),dx=q.left+q.width/2-cx,dy=q.top+q.height/2-cy,al=dx*D[0]+dy*D[1],pp=Math.abs(dx*D[1]-dy*D[0]);if(al<=0)return;const d=al+2*pp;if(d<bd){bd=d;best=a}});if(best)best.focus()});
+(()=>{const w=$('#win'),h=w.querySelector('header');let s=null;h.addEventListener('pointerdown',e=>{if(document.documentElement.dataset.mode!=='laptop'||e.target.tagName==='BUTTON')return;const r=w.getBoundingClientRect();s=[e.clientX-r.left,e.clientY-r.top];h.setPointerCapture(e.pointerId)});h.addEventListener('pointermove',e=>{if(s){w.style.left=e.clientX-s[0]+'px';w.style.top=e.clientY-s[1]+'px'}});h.addEventListener('pointerup',()=>s=null)})();
+(()=>{const L=['STARK INTERFACE INITIALIZING','SECURE SYSTEM ONLINE','GOOD TO SEE YOU, OPERATOR'];let i=0,x;const t=$('#bt2'),end=()=>{clearInterval(x);$('#boot').classList.add('off');setTimeout(()=>$('#boot').remove(),900)};t.textContent=L[0];x=setInterval(()=>{i++;if(i<L.length)t.textContent=L[i];else end()},1400);$('#skip').onclick=end})();
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
